@@ -131,3 +131,6 @@ out
 
 # Replit debugger
 .breakpoints
+
+# Replit internal registry URLs get baked into this — exclude so Vercel resolves from public npm
+package-lock.json
