@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
-import { getPool, initDb } from "./db.js";
-import { sendMail } from "./mailer.js";
+import { getPool, initDb } from "../lib/db.js";
+import { sendMail } from "../lib/mailer.js";
 
 export default async function handler(req, res) {
   await initDb();

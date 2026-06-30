@@ -1,4 +1,4 @@
-import { sendMail } from "./mailer.js";
+import { sendMail } from "../lib/mailer.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

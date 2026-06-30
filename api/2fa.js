@@ -1,6 +1,6 @@
 import { generateSecret, verify as otpVerify } from "otplib";
 import QRCode from "qrcode";
-import { getPool, initDb } from "./db.js";
+import { getPool, initDb } from "../lib/db.js";
 import { createSession } from "./sessions.js";
 
 function buildOtpURI(email, secret) {

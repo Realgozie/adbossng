@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getPool, initDb } from "./db.js";
+import { getPool, initDb } from "../lib/db.js";
 
 const GRADIENT_COLORS = [
   "from-blue-500 to-indigo-600",

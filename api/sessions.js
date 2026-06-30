@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getPool, initDb } from "./db.js";
+import { getPool, initDb } from "../lib/db.js";
 
 function parseDevice(ua = "") {
   let device = "Unknown Device";
