@@ -1,43 +1,34 @@
-import Database from "@replit/database";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
+import { getPool, initDb } from "./db.js";
 import { sendMail } from "./mailer.js";
 
-const db = new Database();
-
 export default async function handler(req, res) {
-  let { name, email, password } = req.body;
+  await initDb();
+  const pool = getPool();
 
+  let { name, email, password } = req.body;
   email = email.toLowerCase().trim();
   password = password.trim();
 
   try {
-    const userData = await db.get("users");
-    const users = Array.isArray(userData) ? userData : (userData?.value || []);
-
-    const userExists = users.some((u) => u.email === email);
-    if (userExists) {
+    const existing = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
+    if (existing.rows.length > 0) {
       return res.status(400).json({ success: false, message: "Email already exists" });
     }
 
+    const countResult = await pool.query("SELECT COUNT(*) FROM users");
+    const isFirstUser = parseInt(countResult.rows[0].count) === 0;
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const verifyToken = randomBytes(32).toString("hex");
-    const isFirstUser = users.length === 0;
 
-    const newUser = {
-      name,
-      email,
-      password: hashedPassword,
-      isVerified: false,
-      verifyToken,
-      joinedAt: new Date().toISOString(),
-      isAdmin: isFirstUser,
-    };
+    await pool.query(
+      `INSERT INTO users (email, name, password, is_verified, verify_token, joined_at, is_admin)
+       VALUES ($1, $2, $3, FALSE, $4, NOW(), $5)`,
+      [email, name, hashedPassword, verifyToken, isFirstUser]
+    );
 
-    const updatedUsers = [...users, newUser];
-    await db.set("users", updatedUsers);
-
-    // Send confirmation email
     const baseUrl = process.env.CUSTOM_DOMAIN
       ? `https://${process.env.CUSTOM_DOMAIN}`
       : process.env.REPLIT_DEPLOYMENT_DOMAIN
@@ -45,6 +36,7 @@ export default async function handler(req, res) {
       : process.env.REPLIT_DEV_DOMAIN
       ? `https://${process.env.REPLIT_DEV_DOMAIN}`
       : "http://localhost:5000";
+
     const verifyLink = `${baseUrl}/api/verify-email?token=${verifyToken}&email=${encodeURIComponent(email)}`;
 
     await sendMail({

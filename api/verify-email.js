@@ -1,8 +1,9 @@
-import Database from "@replit/database";
-
-const db = new Database();
+import { getPool, initDb } from "./db.js";
 
 export default async function handler(req, res) {
+  await initDb();
+  const pool = getPool();
+
   const { token, email } = req.query;
   if (!token || !email) {
     return res.send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px;">
@@ -13,24 +14,23 @@ export default async function handler(req, res) {
   const normalEmail = decodeURIComponent(email).toLowerCase().trim();
 
   try {
-    const userData = await db.get("users");
-    const users = Array.isArray(userData) ? userData : (userData?.value || []);
-    const user = users.find((u) => u.email === normalEmail);
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [normalEmail]);
+    const user = result.rows[0];
 
-    if (!user || user.verifyToken !== token) {
+    if (!user || user.verify_token !== token) {
       return res.send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px;">
         <h2 style="color:#ef4444;">Invalid or expired verification link.</h2>
         <a href="/">Go to AdBOSS</a></body></html>`);
     }
 
-    if (user.isVerified) {
+    if (user.is_verified) {
       return res.redirect("/#/login?verified=already");
     }
 
-    const updated = users.map((u) =>
-      u.email === normalEmail ? { ...u, isVerified: true, verifyToken: null } : u
+    await pool.query(
+      "UPDATE users SET is_verified = TRUE, verify_token = NULL WHERE email = $1",
+      [normalEmail]
     );
-    await db.set("users", updated);
 
     return res.redirect("/#/login?verified=true");
   } catch (err) {

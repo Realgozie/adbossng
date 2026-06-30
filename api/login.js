@@ -1,30 +1,27 @@
-import Database from "@replit/database";
 import bcrypt from "bcrypt";
+import { getPool, initDb } from "./db.js";
 import { createSession } from "./sessions.js";
 
-const db = new Database();
-
 export default async function handler(req, res) {
-  let { email, password } = req.body;
+  await initDb();
+  const pool = getPool();
 
+  let { email, password } = req.body;
   email = email.toLowerCase().trim();
   password = password.trim();
 
   try {
-    const userData = await db.get("users");
-    const users = Array.isArray(userData) ? userData : (userData?.value || []);
-
-    const user = users.find((u) => u.email === email);
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = result.rows[0];
 
     if (user) {
       const valid = await bcrypt.compare(password, user.password);
 
       if (valid) {
         const adminEmail = (process.env.ADMIN_EMAIL || "").toLowerCase().trim();
-        const isAdmin = adminEmail ? email === adminEmail : users[0]?.email === email;
+        const isAdmin = adminEmail ? email === adminEmail : user.is_admin;
 
-        // If 2FA is enabled, require the TOTP code before completing login
-        if (user.twoFactorEnabled && user.twoFactorSecret) {
+        if (user.two_factor_enabled && user.two_factor_secret) {
           console.log("Login requires 2FA for:", email);
           return res.status(200).json({
             success: false,
@@ -34,7 +31,6 @@ export default async function handler(req, res) {
           });
         }
 
-        // Create session record
         const ua = req.headers["user-agent"] || "";
         const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket?.remoteAddress || "Unknown";
         const sessionId = await createSession(email, ua, ip);

@@ -1,21 +1,5 @@
-import Database from "@replit/database";
 import { randomUUID } from "crypto";
-
-const db = new Database();
-
-function sessionsKey(email) {
-  return `sessions_${email.toLowerCase().trim()}`;
-}
-
-async function getSessions(email) {
-  try {
-    const data = await db.get(sessionsKey(email));
-    if (!data) return [];
-    return Array.isArray(data) ? data : (data?.value || []);
-  } catch {
-    return [];
-  }
-}
+import { getPool, initDb } from "./db.js";
 
 function parseDevice(ua = "") {
   let device = "Unknown Device";
@@ -45,53 +29,69 @@ function parseDevice(ua = "") {
 }
 
 export async function createSession(email, ua, ip) {
-  const sessions = await getSessions(email);
+  await initDb();
+  const pool = getPool();
   const { device, type } = parseDevice(ua);
   const id = randomUUID();
-  const now = new Date().toISOString();
 
-  const newSession = { id, device, type, ip: ip || "Unknown", createdAt: now, lastSeen: now };
+  await pool.query(
+    `INSERT INTO sessions (id, user_email, device, type, ip, created_at, last_seen)
+     VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+    [id, email.toLowerCase().trim(), device, type, ip || "Unknown"]
+  );
 
-  // Keep last 5 sessions
-  const updated = [newSession, ...sessions].slice(0, 5);
-  await db.set(sessionsKey(email), updated);
+  // Keep only last 5 sessions per user
+  await pool.query(
+    `DELETE FROM sessions WHERE user_email = $1 AND id NOT IN (
+      SELECT id FROM sessions WHERE user_email = $1 ORDER BY created_at DESC LIMIT 5
+    )`,
+    [email.toLowerCase().trim()]
+  );
+
   return id;
 }
 
 export default async function handler(req, res) {
+  await initDb();
+  const pool = getPool();
+
   const email = (req.headers["x-user-email"] || "").toLowerCase().trim();
   const currentSessionId = req.headers["x-session-id"] || "";
   if (!email) return res.status(401).json({ success: false, message: "Unauthorized" });
 
-  // GET — list sessions
   if (req.method === "GET") {
-    const sessions = await getSessions(email);
-    const enriched = sessions.map((s) => ({
-      ...s,
+    const result = await pool.query(
+      "SELECT * FROM sessions WHERE user_email = $1 ORDER BY created_at DESC",
+      [email]
+    );
+    const sessions = result.rows.map((s) => ({
+      id: s.id,
+      device: s.device,
+      type: s.type,
+      ip: s.ip,
+      createdAt: s.created_at,
+      lastSeen: s.last_seen,
       isCurrent: s.id === currentSessionId,
     }));
-    return res.json({ success: true, sessions: enriched });
+    return res.json({ success: true, sessions });
   }
 
-  // DELETE — revoke a session
   if (req.method === "DELETE") {
     const { id } = req.body;
     if (!id) return res.status(400).json({ success: false, message: "Session ID required" });
     if (id === currentSessionId) {
       return res.status(400).json({ success: false, message: "Cannot revoke current session" });
     }
-    const sessions = await getSessions(email);
-    const filtered = sessions.filter((s) => s.id !== id);
-    await db.set(sessionsKey(email), filtered);
+    await pool.query("DELETE FROM sessions WHERE id = $1 AND user_email = $2", [id, email]);
     return res.json({ success: true });
   }
 
-  // DELETE all other sessions (sign out everywhere else)
   if (req.method === "PUT") {
-    const sessions = await getSessions(email);
-    const onlyCurrent = sessions.filter((s) => s.id === currentSessionId);
-    await db.set(sessionsKey(email), onlyCurrent);
-    return res.json({ success: true, count: sessions.length - onlyCurrent.length });
+    const result = await pool.query(
+      "DELETE FROM sessions WHERE user_email = $1 AND id != $2",
+      [email, currentSessionId]
+    );
+    return res.json({ success: true, count: result.rowCount });
   }
 
   return res.status(405).json({ success: false, message: "Method not allowed" });

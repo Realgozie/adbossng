@@ -1,41 +1,41 @@
-import Database from "@replit/database";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
+import { getPool, initDb } from "./db.js";
 import { sendMail } from "./mailer.js";
 
-const db = new Database();
-
-async function getUsers() {
-  const data = await db.get("users");
-  return Array.isArray(data) ? data : (data?.value || []);
-}
-
 export async function forgotPasswordHandler(req, res) {
+  await initDb();
+  const pool = getPool();
+
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
   const normalEmail = email.toLowerCase().trim();
 
   try {
-    const users = await getUsers();
-    const user = users.find((u) => u.email === normalEmail);
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [normalEmail]);
+    const user = result.rows[0];
 
-    // Always return success to prevent email enumeration
     if (!user) {
       return res.json({ success: true, message: "If this email is registered, a reset link has been sent." });
     }
 
     const token = randomBytes(32).toString("hex");
-    const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
+    const expiry = Date.now() + 60 * 60 * 1000;
 
-    const updatedUsers = users.map((u) =>
-      u.email === normalEmail ? { ...u, resetToken: token, resetExpiry: expiry } : u
+    await pool.query(
+      "UPDATE users SET reset_token = $1, reset_expiry = $2 WHERE email = $3",
+      [token, expiry, normalEmail]
     );
-    await db.set("users", updatedUsers);
 
-    const baseUrl = process.env.REPLIT_DEV_DOMAIN
+    const baseUrl = process.env.CUSTOM_DOMAIN
+      ? `https://${process.env.CUSTOM_DOMAIN}`
+      : process.env.REPLIT_DEPLOYMENT_DOMAIN
+      ? `https://${process.env.REPLIT_DEPLOYMENT_DOMAIN}`
+      : process.env.REPLIT_DEV_DOMAIN
       ? `https://${process.env.REPLIT_DEV_DOMAIN}`
       : "http://localhost:5000";
+
     const resetLink = `${baseUrl}/#/reset-password?token=${token}&email=${encodeURIComponent(normalEmail)}`;
 
     await sendMail({
@@ -62,6 +62,9 @@ export async function forgotPasswordHandler(req, res) {
 }
 
 export async function resetPasswordHandler(req, res) {
+  await initDb();
+  const pool = getPool();
+
   const { token, email, newPassword } = req.body;
   if (!token || !email || !newPassword) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
@@ -73,20 +76,18 @@ export async function resetPasswordHandler(req, res) {
   const normalEmail = email.toLowerCase().trim();
 
   try {
-    const users = await getUsers();
-    const user = users.find((u) => u.email === normalEmail);
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [normalEmail]);
+    const user = result.rows[0];
 
-    if (!user || user.resetToken !== token || !user.resetExpiry || Date.now() > user.resetExpiry) {
+    if (!user || user.reset_token !== token || !user.reset_expiry || Date.now() > parseInt(user.reset_expiry)) {
       return res.status(400).json({ success: false, message: "Invalid or expired reset link." });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    const updatedUsers = users.map((u) =>
-      u.email === normalEmail
-        ? { ...u, password: hashed, resetToken: null, resetExpiry: null }
-        : u
+    await pool.query(
+      "UPDATE users SET password = $1, reset_token = NULL, reset_expiry = NULL WHERE email = $2",
+      [hashed, normalEmail]
     );
-    await db.set("users", updatedUsers);
 
     return res.json({ success: true, message: "Password reset successfully. You can now log in." });
   } catch (err) {
