@@ -5,11 +5,10 @@ let pool;
 
 export function getPool() {
   if (!pool) {
+    const connStr = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes("localhost")
-        ? false
-        : { rejectUnauthorized: false },
+      connectionString: connStr,
+      ssl: connStr?.includes("localhost") ? false : { rejectUnauthorized: false },
     });
   }
   return pool;
