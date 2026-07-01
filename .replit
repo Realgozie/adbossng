@@ -54,5 +54,5 @@ packages = ["tree", "opensshWithKerberos"]
 [userenv]
 
 [userenv.shared]
-ADMIN_EMAIL = "info.adboss@gmail.com"
+ADMIN_EMAIL = "contractor.samson@gmail.com"
 CUSTOM_DOMAIN = "adbossng.vercel.app"
