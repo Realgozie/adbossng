@@ -27,6 +27,22 @@ export default function Login() {
   const [totpLoading, setTotpLoading] = useState(false);
   const [totpError, setTotpError] = useState("");
 
+  // 5-minute inactivity timeout — redirect to home
+  useEffect(() => {
+    const TIMEOUT = 5 * 60 * 1000;
+    let timer = setTimeout(() => navigate("/"), TIMEOUT);
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => navigate("/"), TIMEOUT);
+    };
+    const events = ["mousemove", "keydown", "click", "touchstart", "scroll"];
+    events.forEach((e) => window.addEventListener(e, reset));
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
