@@ -7,7 +7,7 @@ export default function ScrollToTop() {
   useEffect(() => {
     if (search.includes("scrollTo")) return;
     window.scrollTo(0, 0);
-  }, [pathname, search]);
+  }, [pathname]);
 
   return null;
 }

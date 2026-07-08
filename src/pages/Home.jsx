@@ -12,12 +12,11 @@ export default function Home() {
   useEffect(() => {
     const target = searchParams.get("scrollTo");
     if (!target) return;
-    const scroll = () => {
+    const timer = setTimeout(() => {
       const el = document.getElementById(target);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    const timer = setTimeout(scroll, 80);
-    setSearchParams({}, { replace: true });
+      setSearchParams({}, { replace: true });
+    }, 80);
     return () => clearTimeout(timer);
   }, [searchParams, setSearchParams]);
 

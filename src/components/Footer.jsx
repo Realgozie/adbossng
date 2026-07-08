@@ -57,7 +57,7 @@ export default function Footer() {
                 { label: "About Us", to: "/about" },
                 { label: "Testimonials", to: "/?scrollTo=testimonials" },
                 { label: "Contact", to: "/?scrollTo=contact" },
-                { label: "Support", href: "mailto:info.adboss@gmail.com" },
+                { label: "Support", to: "/?scrollTo=contact" },
               ].map((l) => (
                 <li key={l.label}>
                   {l.href ? (
