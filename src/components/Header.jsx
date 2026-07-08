@@ -13,8 +13,8 @@ export default function Header() {
   if (hideHeaderRoutes.includes(location.pathname)) return null;
 
   const navLinks = [
-    { label: "Features", to: "/#features", isHash: true },
-    { label: "Testimonials", to: "/#testimonials", isHash: true },
+    { label: "Features", to: "/?scrollTo=features" },
+    { label: "Testimonials", to: "/?scrollTo=testimonials" },
     { label: "Pricing", to: "/pricing" },
     { label: "About", to: "/about" },
   ];
@@ -27,25 +27,15 @@ export default function Header() {
 
       {/* Desktop nav */}
       <nav className="hidden md:flex items-center gap-6">
-        {navLinks.map((l) =>
-          l.isHash ? (
-            <a
-              key={l.label}
-              href={l.to}
-              className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              {l.label}
-            </a>
-          ) : (
-            <Link
-              key={l.label}
-              to={l.to}
-              className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              {l.label}
-            </Link>
-          )
-        )}
+        {navLinks.map((l) => (
+          <Link
+            key={l.label}
+            to={l.to}
+            className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            {l.label}
+          </Link>
+        ))}
         <Link
           to="/login"
           className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -86,27 +76,16 @@ export default function Header() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-lg md:hidden z-50 px-4 py-4 flex flex-col gap-1">
-          {navLinks.map((l) =>
-            l.isHash ? (
-              <a
-                key={l.label}
-                href={l.to}
-                onClick={() => setMobileOpen(false)}
-                className="px-4 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                {l.label}
-              </a>
-            ) : (
-              <Link
-                key={l.label}
-                to={l.to}
-                onClick={() => setMobileOpen(false)}
-                className="px-4 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                {l.label}
-              </Link>
-            )
-          )}
+          {navLinks.map((l) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              onClick={() => setMobileOpen(false)}
+              className="px-4 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              {l.label}
+            </Link>
+          ))}
           <Link to="/login" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-colors">Login</Link>
           <Link to="/register" onClick={() => setMobileOpen(false)} className="mt-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition-all text-center">
             Get Started Free

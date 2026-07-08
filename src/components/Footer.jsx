@@ -34,7 +34,7 @@ export default function Footer() {
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5">Product</h4>
             <ul className="space-y-3">
               {[
-                { label: "Features", to: "/#features" },
+                { label: "Features", to: "/?scrollTo=features" },
                 { label: "Pricing", to: "/pricing" },
                 { label: "Dashboard", to: "/dashboard" },
                 { label: "Register", to: "/register" },
@@ -55,8 +55,8 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { label: "About Us", to: "/about" },
-                { label: "Testimonials", to: "/#testimonials" },
-                { label: "Contact", to: "/#contact" },
+                { label: "Testimonials", to: "/?scrollTo=testimonials" },
+                { label: "Contact", to: "/?scrollTo=contact" },
                 { label: "Support", href: "mailto:info.adboss@gmail.com" },
               ].map((l) => (
                 <li key={l.label}>

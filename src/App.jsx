@@ -14,6 +14,7 @@ import CheckoutSuccess from "./components/CheckoutSuccess";
 import CheckoutCancel from "./components/CheckoutCancel";
 import NotFound from "./components/NotFound";
 import CookieBanner from "./components/CookieBanner";
+import ScrollToTop from "./components/ScrollToTop";
 
 import { PrivacyPolicy, TermsOfService, About } from "./components/Legal";
 
@@ -21,6 +22,7 @@ export default function App() {
   return (
     <GlobalErrorBoundary>
       <BrowserRouter>
+        <ScrollToTop />
         <Toaster position="top-right" reverseOrder={false} />
         <CookieBanner />
         <Routes>
