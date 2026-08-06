@@ -50,10 +50,12 @@ export default function Settings({ user, onUserUpdate }) {
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    company: "",
+    company: user?.company || "",
     role: userRole,
-    timezone: "UTC",
+    timezone: user?.timezone || "UTC+1 West Africa Time",
   });
+
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
@@ -95,13 +97,26 @@ export default function Settings({ user, onUserUpdate }) {
     if (activeTab === "team") fetchTeam();
   }, [activeTab]);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!formData.name.trim()) return toast.error("Name is required");
     if (!formData.email.includes("@")) return toast.error("Invalid email");
-    const updatedUser = { ...user, name: formData.name, email: formData.email };
-    if (onUserUpdate) onUserUpdate(updatedUser);
-    else localStorage.setItem("user", JSON.stringify(updatedUser));
-    toast.success("Profile saved successfully!");
+    setProfileSaving(true);
+    try {
+      // Simulate a brief async save so the loading state is visible
+      await new Promise((r) => setTimeout(r, 600));
+      const updatedUser = {
+        ...user,
+        name: formData.name,
+        email: formData.email,
+        company: formData.company,
+        timezone: formData.timezone,
+      };
+      if (onUserUpdate) onUserUpdate(updatedUser);
+      else localStorage.setItem("user", JSON.stringify(updatedUser));
+      toast.success("Profile saved successfully!");
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const handleChangePassword = () => {
@@ -432,8 +447,27 @@ export default function Settings({ user, onUserUpdate }) {
                     </div>
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
-                    <button onClick={() => setFormData({ name: user?.name || "", email: user?.email || "", company: "AdBOSS Marketing", role: "Administrator", timezone: "UTC+1 West Africa Time" })} className="px-6 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Reset</button>
-                    <button onClick={handleSaveProfile} className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-100">Save Changes</button>
+                    <button
+                      onClick={() => setFormData({ name: user?.name || "", email: user?.email || "", company: user?.company || "", role: userRole, timezone: user?.timezone || "UTC+1 West Africa Time" })}
+                      disabled={profileSaving}
+                      className="px-6 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors disabled:opacity-40"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={profileSaving}
+                      className="relative px-8 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-100 disabled:opacity-70 disabled:cursor-not-allowed min-w-[130px]"
+                    >
+                      {profileSaving ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                          Saving…
+                        </span>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>

@@ -7,6 +7,14 @@ function buildOtpURI(email, secret) {
   return `otpauth://totp/AdBOSS:${encodeURIComponent(email)}?secret=${secret}&issuer=AdBOSS`;
 }
 
+// Allow ±1 time-step (30 s) so deployed servers with minor clock drift still accept valid codes
+const VERIFY_OPTS = { epochTolerance: 1 };
+
+async function checkToken(token, secret) {
+  const result = await otpVerify({ token: String(token).trim(), secret, ...VERIFY_OPTS });
+  return result === true || result?.valid === true;
+}
+
 export default async function handler(req, res) {
   await initDb();
   const pool = getPool();
@@ -46,8 +54,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, message: "No pending 2FA setup. Please restart setup." });
       }
 
-      const verifyResult = await otpVerify({ token: code.trim(), secret: user.two_factor_pending });
-      const isValid = verifyResult === true || verifyResult?.valid === true;
+      const isValid = await checkToken(code, user.two_factor_pending);
       if (!isValid) {
         return res.status(400).json({ success: false, message: "Invalid code. Please try again." });
       }
@@ -77,8 +84,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, message: "2FA is not enabled" });
       }
 
-      const verifyResult = await otpVerify({ token: code.trim(), secret: user.two_factor_secret });
-      const isValid = verifyResult === true || verifyResult?.valid === true;
+      const isValid = await checkToken(code, user.two_factor_secret);
       if (!isValid) {
         return res.status(400).json({ success: false, message: "Invalid code. 2FA not disabled." });
       }
@@ -107,8 +113,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, message: "2FA not enabled for this account" });
       }
 
-      const verifyResult = await otpVerify({ token: code?.trim(), secret: user.two_factor_secret });
-      const isValid = verifyResult === true || verifyResult?.valid === true;
+      const isValid = await checkToken(code, user.two_factor_secret);
       if (!isValid) {
         return res.status(400).json({ success: false, message: "Invalid code. Please try again." });
       }
