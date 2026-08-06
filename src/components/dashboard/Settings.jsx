@@ -277,7 +277,7 @@ export default function Settings({ user, onUserUpdate }) {
       const res = await fetch("/api/2fa/verify", {
         method: "POST",
         headers: twoFAHeaders(),
-        body: JSON.stringify({ code: setupCode }),
+        body: JSON.stringify({ code: setupCode, secret: setupSecret }),
       });
       const data = await res.json();
       if (data.success) {

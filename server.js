@@ -62,11 +62,24 @@ app.delete("/api/sessions", sessionsHandler);
 app.put("/api/sessions", sessionsHandler);
 
 // Two-Factor Authentication
-app.get("/api/2fa", (req, res) => { req._action = "status"; twoFAHandler(req, res); });
-app.post("/api/2fa/setup", (req, res) => { req._action = "setup"; twoFAHandler(req, res); });
-app.post("/api/2fa/verify", (req, res) => { req._action = "verify"; twoFAHandler(req, res); });
-app.post("/api/2fa/disable", (req, res) => { req._action = "disable"; twoFAHandler(req, res); });
-app.post("/api/2fa/check", (req, res) => { req._action = "check"; twoFAHandler(req, res); });
+// Express 4 does NOT catch rejected promises from route callbacks — wrap every
+// async handler so unhandled errors always return JSON instead of hanging.
+function asyncRoute(action, handler) {
+  return (req, res) => {
+    req._action = action;
+    Promise.resolve(handler(req, res)).catch((err) => {
+      console.error(`[2FA ${action} error]`, err);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: "Internal server error" });
+      }
+    });
+  };
+}
+app.get("/api/2fa",         asyncRoute("status",  twoFAHandler));
+app.post("/api/2fa/setup",  asyncRoute("setup",   twoFAHandler));
+app.post("/api/2fa/verify", asyncRoute("verify",  twoFAHandler));
+app.post("/api/2fa/disable",asyncRoute("disable", twoFAHandler));
+app.post("/api/2fa/check",  asyncRoute("check",   twoFAHandler));
 
 // Contact form
 app.post("/api/contact", contactHandler);
