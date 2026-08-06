@@ -42,7 +42,7 @@ const Toggle = ({ enabled, onChange, label, description }) => (
   </div>
 );
 
-export default function Settings({ user }) {
+export default function Settings({ user, onUserUpdate }) {
   const [activeTab, setActiveTab] = useState("profile");
 
   const userRole = user?.isAdmin ? "Administrator" : "Member";
@@ -98,7 +98,9 @@ export default function Settings({ user }) {
   const handleSaveProfile = () => {
     if (!formData.name.trim()) return toast.error("Name is required");
     if (!formData.email.includes("@")) return toast.error("Invalid email");
-    localStorage.setItem("user", JSON.stringify({ ...user, name: formData.name, email: formData.email }));
+    const updatedUser = { ...user, name: formData.name, email: formData.email };
+    if (onUserUpdate) onUserUpdate(updatedUser);
+    else localStorage.setItem("user", JSON.stringify(updatedUser));
     toast.success("Profile saved successfully!");
   };
 

@@ -65,14 +65,20 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { dark, toggle } = useTheme();
 
-  // Parse user first (synchronous — safe before hooks)
-  let user = null;
-  try {
-    const userData = localStorage.getItem("user");
-    if (userData) user = JSON.parse(userData);
-  } catch (error) {
-    localStorage.removeItem("user");
-  }
+  const [user, setUser] = useState(() => {
+    try {
+      const userData = localStorage.getItem("user");
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      localStorage.removeItem("user");
+      return null;
+    }
+  });
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
 
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -312,7 +318,7 @@ export default function Dashboard() {
             {activeTab === "overview" && <Home key="overview" user={user} setActiveTab={switchTab} />}
             {activeTab === "campaigns" && <Campaigns key="campaigns" user={user} />}
             {activeTab === "messages" && <Messages key="messages" user={user} />}
-            {activeTab === "settings" && <Settings key="settings" user={user} />}
+            {activeTab === "settings" && <Settings key="settings" user={user} onUserUpdate={handleUserUpdate} />}
             {activeTab === "about" && <About key="about" onGetStarted={() => switchTab("campaigns")} />}
           </AnimatePresence>
         </main>
